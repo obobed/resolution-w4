@@ -1,4 +1,5 @@
 use std::{collections::HashMap, result};
+use ureq::{Agent, http::response};
 use crate::ast::{Expr, Op, Statement};
 
 #[derive(Clone, Debug)]
@@ -163,7 +164,7 @@ impl Interpreter {
         if let Ok(result) = self.call_builtin(name, args.clone()) {
             return Ok(result)
         }
-        
+
         let func = self.functions.get(name)
             .ok_or_else(|| format!("undefined function: {name}"))?;
 
@@ -202,5 +203,27 @@ impl Interpreter {
             Value::StringVal(s) => !s.is_empty(),
             Value::Nil => false,
         }
+    }
+}
+
+fn call_builtin(&mut self, name: &str, args: Vec<Value>) -> Result<Value, String> {
+    match name {
+        "fetch" => {
+            if args.len() != 1 {
+                return Err("fetch expects 1 argument! (URL)".to_string());
+            }
+            match &args[0] {
+                Value::StringVal(url) => {
+                    let response = ureq::get(url)
+                        .call()
+                        .body_mut()
+                        .read_to_string()
+                        .map_err(|e| format!("fetch error: {}", e));
+                    Ok(Value::StringVal(response))
+                }
+                _ => Err("fetch requires a url".to_string()),
+            }
+        }
+        _ => Err(format!("unknown builtin: {}", name)),
     }
 }

@@ -38,6 +38,8 @@ while i < 6 do
     i = i + 1;
 end;
 
+fetch("google.com");
+
 if 10 > 5 then
     puts "ten is greater";
 else
